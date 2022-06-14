@@ -207,7 +207,10 @@ int main(int argc, char *argv[])
         });
     healthInterface->initialize();
 
-    Domain domainDcTotal(conn, server, dcTotal);
+    DcTotalDomain domainDcTotal(conn, server, dcTotal);
+    GenericDomain cpuDomain(conn, server, cpuSubsystem);
+    GenericDomain memoryDomain(conn, server, memorySubsystem);
+    GenericDomain pcieDomain(conn, server, highPowerIOsubsystem);
 
     sdbusplus::bus::match::match configurationMatch(
         static_cast<sdbusplus::bus::bus &>(*conn),

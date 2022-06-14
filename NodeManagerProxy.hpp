@@ -1394,6 +1394,9 @@ template <class T, class Tuple> T makeFromTuple(Tuple &&tuple)
 constexpr const char *nmDomainCapabilitesIf =
     "xyz.openbmc_project.NodeManager.Capabilities";
 
+constexpr const char *nmDomainAttributesIf =
+    "xyz.openbmc_project.NodeManager.DomainAttributes";
+
 /**
  * @brief Node Manager Domain Policy Manager DBus interface
  * The following method shall be supported:
@@ -1406,26 +1409,71 @@ constexpr const char *nmDomainPolicyManagerIf =
     "xyz.openbmc_project.NodeManager.PolicyManager";
 
 boost::container::flat_map<uint8_t, std::string> domainIdToName = {
-    {5, "DCTotalPlatformPower"}};
+    {5, "DCTotalPlatformPower"},
+    {1, "CPUSubsystem"},
+    {2, "MemorySubsystem"},
+    {4, "PCIe"}};
 
-/**
- * @brief Node Manager Domain
- */
-class Domain
+class GenericDomain
 {
   public:
-    Domain() = delete;
-    Domain(const Domain &) = delete;
-    Domain &operator=(const Domain &) = delete;
-    Domain(Domain &&) = delete;
-    Domain &operator=(Domain &&) = delete;
-
-    Domain(std::shared_ptr<sdbusplus::asio::connection> connArg,
-           sdbusplus::asio::object_server &server, uint8_t idArg) :
+    GenericDomain() = delete;
+    GenericDomain(const GenericDomain &) = delete;
+    GenericDomain &operator=(const GenericDomain &) = delete;
+    GenericDomain(GenericDomain &&) = delete;
+    GenericDomain &operator=(GenericDomain &&) = delete;
+    virtual ~GenericDomain() = default;
+    GenericDomain(std::shared_ptr<sdbusplus::asio::connection> connArg,
+                  sdbusplus::asio::object_server &server, uint8_t idArg) :
         id(idArg),
         dbusPath("/xyz/openbmc_project/NodeManager/Domain/" +
                  domainIdToName[idArg]),
         conn(connArg)
+    {
+        createDomainAttributesInterface(server, idArg);
+    }
+
+  protected:
+    uint8_t id;
+    std::string dbusPath;
+    std::shared_ptr<sdbusplus::asio::connection> conn;
+
+  private:
+    void createDomainAttributesInterface(sdbusplus::asio::object_server &server,
+                                         uint8_t idArg)
+    {
+        domainAttributesIf =
+            server.add_interface(dbusPath, nmDomainAttributesIf);
+        domainAttributesIf->register_property_r(
+            "DomainId", std::string{}, sdbusplus::vtable::property_::const_,
+            [domainId = domainIdToName[idArg]](const auto &) {
+                return domainId;
+            });
+        domainAttributesIf->register_property_r(
+            "AvailableComponents", std::vector<uint8_t>(),
+            sdbusplus::vtable::property_::const_,
+            [](const auto &) { return std::vector<uint8_t>(); });
+        domainAttributesIf->initialize();
+    }
+
+    std::shared_ptr<sdbusplus::asio::dbus_interface> domainAttributesIf;
+};
+
+/**
+ * @brief Node Manager Domain
+ */
+class DcTotalDomain : public GenericDomain
+{
+  public:
+    DcTotalDomain() = delete;
+    DcTotalDomain(const DcTotalDomain &) = delete;
+    DcTotalDomain &operator=(const DcTotalDomain &) = delete;
+    DcTotalDomain(DcTotalDomain &&) = delete;
+    DcTotalDomain &operator=(DcTotalDomain &&) = delete;
+
+    DcTotalDomain(std::shared_ptr<sdbusplus::asio::connection> connArg,
+                  sdbusplus::asio::object_server &server, uint8_t idArg) :
+        GenericDomain(connArg, server, idArg)
     {
         // SPS NM does not support DC Total so need to remap to AC Total (entire
         // platform)
@@ -1439,12 +1487,9 @@ class Domain
     }
 
   private:
-    uint8_t id;
-    std::string dbusPath;
     std::shared_ptr<sdbusplus::asio::dbus_interface> capabilitesIf;
     std::shared_ptr<sdbusplus::asio::dbus_interface> policyManagerIf;
     std::shared_ptr<sdbusplus::asio::dbus_interface> statisticsIf;
-    std::shared_ptr<sdbusplus::asio::connection> conn;
     std::vector<std::unique_ptr<Policy>> policies;
 
     void createCapabilitesInterface(sdbusplus::asio::object_server &server)
