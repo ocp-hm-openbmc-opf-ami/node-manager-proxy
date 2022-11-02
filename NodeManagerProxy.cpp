@@ -28,7 +28,7 @@ static boost::asio::steady_timer readingsSchedulingTimer(io);
 static boost::asio::steady_timer framesDistributingTimer(io);
 
 static sdbusplus::asio::object_server server =
-    sdbusplus::asio::object_server(conn);
+    sdbusplus::asio::object_server(conn, true);
 
 static std::vector<std::unique_ptr<Request>> configuredSensors;
 
@@ -184,6 +184,7 @@ void createAssociations()
 int main(int argc, char *argv[])
 {
     conn->request_name(nmdBus);
+    server.add_manager("/xyz/openbmc_project/sensors");
     createSensors();
     createAssociations();
     performReadings();
