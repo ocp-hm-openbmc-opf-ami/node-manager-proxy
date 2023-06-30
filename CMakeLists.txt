@@ -37,7 +37,9 @@ target_link_libraries (${PROJECT_NAME} ${Boost_LIBRARIES})
 
 link_directories (${EXTERNAL_INSTALL_LOCATION}/lib)
 
+pkg_get_variable(SYSTEMD_SYSTEM_UNIT_DIR systemd systemdsystemunitdir)
+
 set (SERVICE_FILES ${PROJECT_SOURCE_DIR}/node-manager-proxy.service)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION sbin)
-install (FILES ${SERVICE_FILES} DESTINATION /lib/systemd/system/)
+install (FILES ${SERVICE_FILES} DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
