@@ -1142,7 +1142,7 @@ class Policy
             server.add_interface(dbusPath, "xyz.openbmc_project.Object.Delete");
         deleteIf->register_method("Delete", [this]() {
             deletePolicy();
-            conn->get_io_context().post(
+            boost::asio::post(conn->get_io_context(),
                 [id = getId(), deleteFun = deleteCallback]() {
                     if (deleteFun)
                     {

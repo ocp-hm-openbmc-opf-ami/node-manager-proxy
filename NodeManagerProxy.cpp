@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <vector>
 
-static boost::asio::io_service io;
+static boost::asio::io_context io;
 static auto conn = std::make_shared<sdbusplus::asio::connection>(io);
 static boost::asio::steady_timer readingsSchedulingTimer(io);
 static boost::asio::steady_timer framesDistributingTimer(io);
